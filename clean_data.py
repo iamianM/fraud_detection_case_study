@@ -36,7 +36,7 @@ add_fraud_col(df_all).pop('fraud_target')
 del df_all['object_id']
 del df_all['has_header']
 del df_all['org_name']
-del df_all['org_desc']
+# del df_all['org_desc']
 del df_all['org_facebook']
 del df_all['org_twitter']
 del df_all['name']
@@ -57,12 +57,12 @@ del df_all['user_age']
 # Use later
 del df_all['ticket_types']
 del df_all['previous_payouts']
-del df_all['description']
+# del df_all['description']
 del df_all['email_domain']
 del df_all['delivery_method']
 
 df_all['time_to_payout'] = df_all.apply(lambda x: x['approx_payout_date'] - x['event_end'], axis=1)
-df_all['time_till_event'] = df_all.apply(lambda x: x['event_created'] == x['user_created'], axis=1)
+df_all['time_till_event'] = df_all.apply(lambda x: x['event_created'] - x['user_created'], axis=1)
 del df_all['approx_payout_date']
 del df_all['event_end']
 del df_all['event_created']

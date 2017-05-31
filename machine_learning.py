@@ -102,19 +102,19 @@ def gridsearch_with_output(estimator, parameter_grid, X_train, y_train):
 
 
 def get_score(y_true, y_predict):
-    return f1_score(y_true, y_predict)
+    return f1_score(y_true, y_predict, average='weighted')
     # return confusion_matrix(y_true, y_predict)
 
 if __name__=='__main__':
 
     # get data
-    df = pd.read_csv('data/clean_data.csv')
+    df = pd.read_csv('data/nlp_data.csv')
     del df['Unnamed: 0']
-    del df['acct_type']
+    # del df['acct_type']
     y = df.pop('fraud_target')
     X = df.astype(float).values
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, stratify=y)
 
     # run all models
 
@@ -134,55 +134,63 @@ if __name__=='__main__':
     knn = run_model(KNeighborsClassifier, X_train, y_train, n_neighbors=5, weights='uniform', metric='minkowski', n_jobs=-1)
     print('knn Score: '+ str(get_score(y_test, knn.predict(X_test))))
 
-    gradient_boosting_grid = {'learning_rate': [0.1, 0.05, 0.02, 0.01],
-                              'max_depth': [2, 4, 6],
-                              'min_samples_leaf': [1, 2, 5, 10],
-                              'max_features': [1.0, 0.3, 0.1],
-                              'n_estimators': [500],
-                              'random_state': [1]}
-    gbr_best_params, gbr_best_model = gridsearch_with_output(GradientBoostingClassifier(), gradient_boosting_grid, X_train, y_train)
-    '''
-    Result of gridsearch:
-    Parameter            | Optimal  | Gridsearch values
-    -------------------------------------------------------
-    learning_rate        | 0.1      | [0.1, 0.05, 0.02, 0.01]
-    max_depth            | 6        | [2, 4, 6]
-    min_samples_leaf     | 1        | [1, 2, 5, 10]
-    max_features         | 0.3      | [1.0, 0.3, 0.1]
-    n_estimators         | 500      | [500]
-    random_state         | 1        | [1]
-    '''
+    svc_grid = {'C': [1, 10, 100, 1000], 'kernel': ['linear', 'rbf', 'poly'], 'degree': [1, 3, 5, 7], 'random_state': [42]}
+    svc_best_params, svc_best_model = gridsearch_with_output(SVC(), svc_grid, X_train, y_train)
 
-    ada_boosting_grid = {'learning_rate': [1, 0.7, 0.3, 0.1, 0.01],
-                              'n_estimators': [500, 1000, 1500, 2000],
-                              'random_state': [1]}
-    ada_best_params, ada_best_model = gridsearch_with_output(AdaBoostClassifier(), ada_boosting_grid, X_train, y_train)
 
-    rfc_grid = {"max_depth": [3, None],
-              "max_features": [1, 3, 5, 8, 12],
-              "min_samples_split": [2, 5, 8, 12],
-              "min_samples_leaf": [2, 5, 8, 12],
-              "bootstrap": [True, False],
-              "criterion": ["gini", "entropy"]}
+    # gradient_boosting_grid = {'learning_rate': [0.1, 0.05, 0.02, 0.01],
+    #                           'max_depth': [2, 4, 6],
+    #                           'min_samples_leaf': [1, 2, 5, 10],
+    #                           'max_features': [1.0, 0.3, 0.1],
+    #                           'n_estimators': [400, 500, 600],
+    #                           'random_state': [1]}
+    # gbr_best_params, gbr_best_model = gridsearch_with_output(GradientBoostingClassifier(), gradient_boosting_grid, X_train, y_train)
+    # print(get_score(y_test, gbr_best_model.predict(X_test)))
+    # '''
+    # Result of gridsearch:
+    # Parameter            | Optimal  | Gridsearch values
+    # -------------------------------------------------------
+    # learning_rate        | 0.1      | [0.1, 0.05, 0.02, 0.01]
+    # max_depth            | 6        | [2, 4, 6]
+    # min_samples_leaf     | 1        | [1, 2, 5, 10]
+    # max_features         | 0.3      | [1.0, 0.3, 0.1]
+    # n_estimators         | 500      | [500]
+    # random_state         | 1        | [1]
+    # '''
+    #
+    # ada_boosting_grid = {'learning_rate': [1, 0.7, 0.3, 0.1, 0.01],
+    #                           'n_estimators': [500, 1000, 1500, 2000],
+    #                           'random_state': [1]}
+    # ada_best_params, ada_best_model = gridsearch_with_output(AdaBoostClassifier(), ada_boosting_grid, X_train, y_train)
+    # print(get_score(y_test, ada_best_model.predict(X_test)))
 
-    rfc_best_params, rfc_best_model = gridsearch_with_output(RandomForestClassifier(), rfc_grid, X_train, y_train)
-    '''
-    Result of gridsearch:
-    Parameter            | Optimal  | Gridsearch values
-    -------------------------------------------------------
-    max_depth            | None     | [3, None]
-    max_features         | 5        | [1, 3, 5, 8, 12]
-    min_samples_split    | 5        | [2, 5, 8, 12]
-    min_samples_leaf     | 2        | [2, 5, 8, 12]
-    bootstrap            | False    | [True, False]
-    criterion            | entropy  | ['gini', 'entropy']
-    Fitting 3 folds for each of 10 candidates, totalling 30 fits
-    '''
+    # rfc_grid = {"max_depth": [3, None],
+    #           "max_features": [1, 3, 5, 8, 12],
+    #           "min_samples_split": [2, 5, 8, 12],
+    #           "min_samples_leaf": [2, 5, 8, 12],
+    #           "bootstrap": [True, False],
+    #           "criterion": ["gini", "entropy"]}
+    #
+    # rfc_best_params, rfc_best_model = gridsearch_with_output(RandomForestClassifier(), rfc_grid, X_train, y_train)
+    # print(get_score(y_test, rfc_best_model.predict(X_test)))
+    # '''
+    # Result of gridsearch:
+    # Parameter            | Optimal  | Gridsearch values
+    # -------------------------------------------------------
+    # max_depth            | None     | [3, None]
+    # max_features         | 5        | [1, 3, 5, 8, 12]
+    # min_samples_split    | 5        | [2, 5, 8, 12]
+    # min_samples_leaf     | 2        | [2, 5, 8, 12]
+    # bootstrap            | False    | [True, False]
+    # criterion            | entropy  | ['gini', 'entropy']
+    # Fitting 3 folds for each of 10 candidates, totalling 30 fits
+    # '''
 
-    mlp_grid={
-        'learning_rate_init': [0.001],
-        'activation': ['logistic', 'relu'],
-        'solver': ['lbfgs'],
-        'hidden_layer_sizes': [(100,1), (10,4), (40,3), (50,2), (60,4)]}
-
-    mlp_best_params, mlp_best_model = gridsearch_with_output(MLPClassifier(), mlp_grid, X_train, y_train)
+    # mlp_grid={
+    #     'learning_rate_init': [0.001],
+    #     'activation': ['logistic', 'relu'],
+    #     'solver': ['lbfgs'],
+    #     'hidden_layer_sizes': [(100,1), (10,4), (40,3), (50,2), (60,4)]}
+    #
+    # mlp_best_params, mlp_best_model = gridsearch_with_output(MLPClassifier(), mlp_grid, X_train, y_train)
+    # print(get_score(y_test, mlp_best_model.predict(X_test)))
