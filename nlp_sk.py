@@ -8,9 +8,10 @@ from nltk.tokenize import word_tokenize
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.stem.porter import PorterStemmer
 from string import punctuation, printable
-from sklearn.metrics import mean_squared_error, accuracy_score, recall_score, precision_score, f1_score
+from sklearn.metrics import mean_squared_error, accuracy_score, recall_score, precision_score, f1_score, roc_curve, auc
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
 import pickle
 
 from sklearn.ensemble import GradientBoostingClassifier
@@ -26,106 +27,9 @@ import pyLDAvis.sklearn
 
 from html.parser import HTMLParser
 
-def clean_data(fname):
-    df_all = pd.read_json(fname)
-    del df_all['object_id']
-    del df_all['has_header']
-    del df_all['org_name']
-    del df_all['org_desc']
-    del df_all['org_facebook']
-    del df_all['org_twitter']
-    del df_all['name']
-    del df_all['sale_duration']
-    del df_all['currency']
-    del df_all['payee_name']
-    del df_all['user_type']
 
-    # Maybes
-    del df_all['show_map']
-    # del df_all['name_length']
-    del df_all['has_analytics']
-    del df_all['fb_published']
-    del df_all['has_logo']
-    # del df_all['channels']
-    del df_all['delivery_method']
-    del df_all['channels']
-    del df_all['user_age']
-
-    # Use later
-    del df_all['ticket_types']
-    del df_all['previous_payouts']
-    # del df_all['description']
-    del df_all['email_domain']
-
-    df_all['time_to_payout'] = df_all.apply(lambda x: x['approx_payout_date'] - x['event_end'], axis=1)
-    df_all['time_till_event'] = df_all.apply(lambda x: x['event_created'] == x['user_created'], axis=1)
-    del df_all['approx_payout_date']
-    del df_all['event_end']
-    del df_all['event_created']
-    del df_all['user_created']
-    del df_all['event_published']
-    del df_all['event_start']
-
-    del df_all['venue_address']
-    del df_all['venue_name']
-    del df_all['venue_state']
-    del df_all['venue_latitude']
-    del df_all['venue_longitude']
-
-    df_all['is_country_same'] = df_all.apply(lambda x: 1 if x['country'] == x['venue_country'] else 0, axis=1)
-    del df_all['country']
-    del df_all['venue_country']
-
-    df_all['listed'] = df_all.apply(lambda x: 1 if x['listed'] == 'y' else 0, axis=1)
-
-    dummies = pd.get_dummies(df_all['payout_type'], drop_first=True)
-    df_all['CHECK'] = dummies['CHECK']
-    df_all['ACH'] = dummies['ACH']
-    del df_all['payout_type']
-
-    add_fraud_col(df_all)
-
-    return df_all
-
-
-def add_fraud_col(df):
-    '''Add fraud_target Column based on acct_type column.
-
-    Parameters
-    ----------
-    df: dataframe object
-
-    Returns
-    -------
-    dataframe with fraud column fraud (1) or not fraud (0)
-    '''
-
-    df['fraud_target'] = df.apply(label_fraud, axis=1)
-    #drop the acct type column since it is an output now.
-    df = df.drop('acct_type', axis=1)
-    return df
-
-def label_fraud(row):
-    '''Step through rows to test account type
-
-    Parameters
-    ----------
-    row: row without fraud
-
-    Returns
-    -------
-    row with fraud identified
-    '''
-
-    # if acct type has these labels it will get a 1 in the fraud column
-    labels = ['fraudster', 'fraudster_event', 'fraudster_att']
-    if row['acct_type'] in labels:
-        return 1  #Fraud
-    else:
-        return 0  #No Fraud
-
-def tfidf_vect(X, tok_func=None):
-    tfidf = TfidfVectorizer(stop_words='english', max_features=500, tokenizer=tok_func)
+def tfidf_vect(X):
+    tfidf = TfidfVectorizer(stop_words='english', max_features=500)
     mtrx = tfidf.fit_transform(X)
     return mtrx
 
@@ -235,7 +139,7 @@ if __name__ == '__main__':
     # get data
     df = pd.read_csv('data/clean_data.csv')
     del df['Unnamed: 0']
-    del df['acct_type']
+    # del df['acct_type']
     df = df.fillna('')
     y = df['fraud_target'].values
 
@@ -250,36 +154,114 @@ if __name__ == '__main__':
         indices = [i for i in df.index]
         X_train, X_test, y_train, y_test, X_indices, y_indices = train_test_split(X, y, indices, random_state=42, stratify=y)
 
-        print('Creating train matrix...')
-        mtrx_train = tfidf_vect(X_train, tokenize)
-        print('Creating test matrix...')
-        mtrx_test = tfidf_vect(X_test, tokenize)
-
-        print('Creating model...')
-        rf_clf = RandomForestClassifier()
-        nb_clf = MultinomialNB()
-
-        # mean_rmse, mean_f1 = cv_tuning(mtrx_train, y_train, rf_clf)
-
-        rf_clf.fit(mtrx_train, y_train)
-        y_pred = rf_clf.predict(mtrx_test)
-
-        f1 = f1_score(y_test, y_pred, average='weighted')
-
+        # print('Creating train matrix...')
+        # mtrx_train = tfidf_vect(X_train)
+        # print('Creating test matrix...')
+        # mtrx_test = tfidf_vect(X_test)
+        #
+        # from sklearn.pipeline import Pipeline
+        # from sklearn.feature_extraction.text import CountVectorizer
+        # count_vect = CountVectorizer()
+        # X_train_counts = count_vect.fit_transform(X_train)
+        # from sklearn.feature_extraction.text import TfidfTransformer
+        # tfidf_transformer = TfidfTransformer()
+        # X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+        # from sklearn.naive_bayes import MultinomialNB
+        # clf = MultinomialNB().fit(X_train_tfidf, y_train)
+        # X_new_counts = count_vect.transform(X_test)
+        # X_new_tfidf = tfidf_transformer.transform(X_new_counts)
+        #
+        # predicted = clf.predict(X_new_tfidf)
+        # f1 = f1_score(y_test, predicted)
+        # print('clf f1 score: '+str(f1))
+        # fpr, tpr, thresholds = roc_curve(y_test, predicted)
+        # area = auc(fpr, tpr)
+        # print('clf AUC: '+ str(area))
+        # from sklearn import metrics
+        # print(metrics.classification_report(y_test, predicted))
+        #
+        #
+        # from sklearn.linear_model import SGDClassifier
+        # text_clf = Pipeline([('vect', CountVectorizer()),
+        #     ('tfidf', TfidfTransformer()),
+        #     ('clf', SGDClassifier(loss='hinge', penalty='l2',
+        #     alpha=1e-3, n_iter=5, random_state=42)),
+        # ])
+        # _ = text_clf.fit(X_train, y_train)
+        # predicted = text_clf.predict(X_test)
+        # print(metrics.classification_report(y_test, predicted))
+        #
+        # from sklearn.model_selection import GridSearchCV
+        # parameters = {'vect__ngram_range': [(1, 1), (1, 2)],
+        #     'tfidf__use_idf': (True, False),
+        #     'clf__alpha': (1e-2, 1e-3),
+        # }
+        # gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
+        # gs_clf = gs_clf.fit(X_train, y_train)
+        # predicted = gs_clf.predict(X_test)
+        # print(metrics.classification_report(y_test, predicted))
+        #
+        # f1 = f1_score(y_test, predicted)
+        # print('sdg f1 score: '+str(f1))
+        # fpr, tpr, thresholds = roc_curve(y_test, predicted)
+        # area = auc(fpr, tpr)
+        # print('sdg AUC: '+ str(area))
+        #
+        # print('Creating model...')
+        # rf_clf = RandomForestClassifier()
+        # nb_clf = MultinomialNB()
+        #
+        # # mean_rmse, mean_f1 = cv_tuning(mtrx_train, y_train, rf_clf)
+        #
+        # rf_clf.fit(mtrx_train, y_train)
+        # y_pred = rf_clf.predict(mtrx_test)
+        #
+        # f1 = f1_score(y_test, y_pred)
+        # print('rf f1 score: '+str(f1))
+        # fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+        # area = auc(fpr, tpr)
+        # print('rf AUC: '+ str(area))
+        #
+        # nb_clf.fit(mtrx_train, y_train)
+        # y_pred = nb_clf.predict(mtrx_test)
+        #
+        # f1 = f1_score(y_test, y_pred)
+        # print('nb f1 score: '+str(f1))
+        # fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+        # area = auc(fpr, tpr)
+        # print('nb AUC: '+ str(area))
+        #
         # gbc = GradientBoostingClassifier()
         #
-        # gbc.fit(mtrx_train, y_train)
+        # gbc.fit(mtrx_train.todense(), y_train)
         # y_pred = gbc.predict(mtrx_test.todense())
-        # f1_gbc = f1_score(y_test, y_pred, average='weighted')
-
-        new_feature_train = rf_clf.predict_proba(mtrx_train.todense())[:,1]
-        new_feature_test = rf_clf.predict_proba(mtrx_test.todense())[:,1]
-
-        df[col].iloc[X_indices] = new_feature_train
-        df[col].iloc[y_indices] = new_feature_test
-
-        df[col] = pd.to_numeric(df[col])
-        df.to_csv('data/nlp_data.csv')
+        #
+        # f1 = f1_score(y_test, y_pred)
+        # print('gbc f1 score: '+str(f1))
+        # fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+        # area = auc(fpr, tpr)
+        # print('gbc AUC: '+ str(area))
+        #
+        # svc = SVC()
+        #
+        # svc.fit(mtrx_train, y_train)
+        # y_pred = svc.predict(mtrx_test.todense())
+        #
+        # f1 = f1_score(y_test, y_pred)
+        # print('svc f1 score: '+str(f1))
+        # fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+        # area = auc(fpr, tpr)
+        # print('svc AUC: '+ str(area))
+        #
+        # new_feature_train = gbc.predict_proba(mtrx_train.todense())[:,1]
+        # gbc.fit(mtrx_test, y_test)
+        # new_feature_test = gbc.predict_proba(mtrx_test.todense())[:,1]
+        #
+        # df[col].iloc[X_indices] = new_feature_train
+        # df[col].iloc[y_indices] = new_feature_test
+        #
+        # df[col] = pd.to_numeric(df[col])
+        # df.to_csv('data/nlp_data.csv')
 
         # rfc_grid = {"max_depth": [3, None],
         #           "max_features": [1, 3, 5, 8, 12],
@@ -299,22 +281,23 @@ if __name__ == '__main__':
         #                           'random_state': [1]}
         # gbr_best_params, gbr_best_model = gridsearch_with_output(GradientBoostingClassifier(), gradient_boosting_grid, mtrx_train.todense(), y_train)
 
-        # new_X = []
-        # for description in X:
-        #     new_X.append(get_processed_text(description))
-        #
-        # max_features = 1000
-        # tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2,
-        #                                 max_features=max_features,
-        #                                 stop_words='english')
-        # tf = tf_vectorizer.fit_transform(new_X)
-        #
-        # n_topics = 20
-        # lda_model = LatentDirichletAllocation(n_topics=n_topics, max_iter=5,
-        #                                       learning_method='online',
-        #                                       learning_offset=50.,
-        #                                       random_state=0)
-        #
-        # lda_model.fit(tf)
-        # vis_data = pyLDAvis.sklearn.prepare(lda_model,tf, tf_vectorizer, R=n_topics, n_jobs=-1)
+        new_X = []
+        for description in X:
+            new_X.append(get_processed_text(description))
+
+        max_features = 1000
+        tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2,
+                                        max_features=max_features,
+                                        stop_words='english')
+        tf = tf_vectorizer.fit_transform()
+
+        n_topics = 20
+        lda_model = LatentDirichletAllocation(n_topics=n_topics, max_iter=5,
+                                              learning_method='online',
+                                              learning_offset=50.,
+                                              random_state=0)
+
+        lda_model.fit(tf)
+        vis_data = pyLDAvis.sklearn.prepare(lda_model,tf, tf_vectorizer, R=n_topics, n_jobs=-1)
         # pyLDAvis.show(vis_data)
+        pyLDAvis.save_html(vis_data, 'web_app/templates/pylda'+str(col)+'.html')

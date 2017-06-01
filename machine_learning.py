@@ -19,7 +19,7 @@ from scipy.cluster.hierarchy import linkage, dendrogram
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score, confusion_matrix
+from sklearn.metrics import mean_squared_error, accuracy_score, recall_score, precision_score, f1_score, roc_curve, auc
 
 from sklearn import datasets
 
@@ -102,7 +102,7 @@ def gridsearch_with_output(estimator, parameter_grid, X_train, y_train):
 
 
 def get_score(y_true, y_predict):
-    return f1_score(y_true, y_predict, average='weighted')
+    return f1_score(y_true, y_predict)
     # return confusion_matrix(y_true, y_predict)
 
 if __name__=='__main__':
@@ -110,6 +110,9 @@ if __name__=='__main__':
     # get data
     df = pd.read_csv('data/nlp_data.csv')
     del df['Unnamed: 0']
+    # del df['description']
+    
+    del df['org_desc']
     # del df['acct_type']
     y = df.pop('fraud_target')
     X = df.astype(float).values
@@ -134,8 +137,8 @@ if __name__=='__main__':
     knn = run_model(KNeighborsClassifier, X_train, y_train, n_neighbors=5, weights='uniform', metric='minkowski', n_jobs=-1)
     print('knn Score: '+ str(get_score(y_test, knn.predict(X_test))))
 
-    svc_grid = {'C': [1, 10, 100, 1000], 'kernel': ['linear', 'rbf', 'poly'], 'degree': [1, 3, 5, 7], 'random_state': [42]}
-    svc_best_params, svc_best_model = gridsearch_with_output(SVC(), svc_grid, X_train, y_train)
+    # svc_grid = {'C': [1, 10, 100, 1000], 'kernel': ['rbf', 'poly'], 'degree': [1, 3, 5, 7], 'random_state': [42]}
+    # svc_best_params, svc_best_model = gridsearch_with_output(SVC(), svc_grid, X_train, y_train)
 
 
     # gradient_boosting_grid = {'learning_rate': [0.1, 0.05, 0.02, 0.01],
