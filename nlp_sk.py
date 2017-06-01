@@ -289,7 +289,7 @@ if __name__ == '__main__':
         tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2,
                                         max_features=max_features,
                                         stop_words='english')
-        tf = tf_vectorizer.fit_transform()
+        tf = tf_vectorizer.fit_transform(new_X)
 
         n_topics = 20
         lda_model = LatentDirichletAllocation(n_topics=n_topics, max_iter=5,

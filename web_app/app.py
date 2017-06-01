@@ -106,6 +106,12 @@ def nonfraud():
 def graphs():
     return render_template('graphs.html')
 
+# graphs page
+@app.route('/topics')
+def topics():
+    return render_template('pyldadescription.html')
+
+
 # about page
 @app.route('/about')
 def about():
