@@ -83,7 +83,7 @@ def predict():
     org_desc = df['org_desc'][0]
     return render_template('prediction.html', out=out, description=description, org_name=org_name, org_desc=org_desc)
 
-@app.route("/fraud", methods=['GET'])
+@app.route("/fraud", methods=['POST'])
 def fraud():
     fraud, prediction_proba, df = run_previous_prediction(1)
     out = 'FRAUD DETECTED!!!     Fraud has been predicted with a probability of '+str(prediction_proba)
