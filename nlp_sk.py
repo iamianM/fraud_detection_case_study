@@ -143,7 +143,8 @@ if __name__ == '__main__':
     df = df.fillna('')
     y = df['fraud_target'].values
 
-    columns_to_use = ['description', 'org_desc']
+    # columns_to_use = ['description', 'org_desc']
+    columns_to_use = ['org_desc']
     for col in columns_to_use:
         X = df[col].values
 

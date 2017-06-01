@@ -106,10 +106,15 @@ def nonfraud():
 def graphs():
     return render_template('graphs.html')
 
-# graphs page
-@app.route('/topics')
-def topics():
+# topics page
+@app.route('/desctopics')
+def desctopics():
     return render_template('pyldadescription.html')
+
+# topics page
+@app.route('/orgtopics')
+def orgtopics():
+    return render_template('pyldaorg_desc.html')
 
 
 # about page
