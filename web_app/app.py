@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 import sys
-sys.path.append('/home/ian/Galvanize/8_Special_Topics/fraud-detection-case-study')
+sys.path.append('/home/ian/Galvanize/8_Special_Topics/fraud-detection-case-study/src')
 from clean_data import clean_data
 sys.path.append('/home/ian/Galvanize/8_Special_Topics/fraud-detection-case-study/web_app')
 from fraud_model import FraudClassifier
